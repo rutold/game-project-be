@@ -1,0 +1,39 @@
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+stages:
+  - build
+  - test
+  - build_image
+  - sonar
+
+build:
+  stage: build
+  script:
+    - ./gradlew build
+  artifacts:
+    paths:
+      - build/libs/*.jar
+
+build_image:
+  stage: build_image
+  needs: ["build"]
+  before_script:
+    - docker info
+    - docker login -u rutold -p dckr_pat_RPSRon-kIF-z4cZd45cOTo0qj-U
+  script:
+    - docker build -t rutold/rutold:latest .
+    - docker push rutold/rutold:latest
+
+sonar:
+  stage: sonar
+  script:
+    - ./gradlew sonar "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=squ_aaf6403497656452fda5d4e8b0ce4a3f42dc5315" "-Dsonar.java.binaries=src/main/java" "-Dsonar.jacoco.reportPaths=build/reports/jacoco/test/jacocoTestReport.xml"
+
+test:
+  stage: test
+  script:
+    - ./gradlew test jacocoTestReport
+  artifacts:
+    paths:
+      - build/reports/jacoco/test/jacocoTestReport.xml
